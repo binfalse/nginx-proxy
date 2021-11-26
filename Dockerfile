@@ -25,18 +25,16 @@ FROM gobuilder as forego
 
 ARG FOREGO_VERSION
 
-RUN git clone https://github.com/nginx-proxy/forego/ \
+RUN git clone https://github.com/binfalse/forego \
    && cd /go/forego \
    && git -c advice.detachedHead=false checkout $FOREGO_VERSION \
-   && go mod download \
-   && CGO_ENABLED=0 GOOS=linux go build -o forego . \
-   && go clean -cache \
+   && make \
    && mv forego /usr/local/bin/ \
    && cd - \
    && rm -rf /go/forego
 
 # Build the final image
-FROM nginx:1.21.3
+FROM nginx:latest
 LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
 
 # Install wget and install/updates certificates
@@ -71,4 +69,4 @@ WORKDIR /app/
 ENV DOCKER_HOST unix:///tmp/docker.sock
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["forego", "start", "-r"]
+CMD ["forego", "start", "-r", "--nocolor"]
