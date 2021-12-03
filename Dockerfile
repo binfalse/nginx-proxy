@@ -39,6 +39,7 @@ LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
 
 # Install wget and install/updates certificates
 RUN apt-get update \
+   && apt-get upgrade -y \
    && apt-get install -y -q --no-install-recommends \
    ca-certificates \
    wget \
