@@ -10,7 +10,7 @@ FROM gobuilder as dockergen
 
 ARG DOCKER_GEN_VERSION
 
-RUN git clone https://github.com/jwilder/docker-gen \
+RUN git clone https://github.com/nginx-proxy/docker-gen \
    && cd /go/docker-gen \
    && git -c advice.detachedHead=false checkout $DOCKER_GEN_VERSION \
    && go mod download \
@@ -35,7 +35,14 @@ RUN git clone https://github.com/binfalse/forego \
 
 # Build the final image
 FROM nginx:latest
-LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
+
+ARG NGINX_PROXY_VERSION
+# Add DOCKER_GEN_VERSION environment variable
+# Because some external projects rely on it
+ARG DOCKER_GEN_VERSION
+ENV NGINX_PROXY_VERSION=${NGINX_PROXY_VERSION} \
+   DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \
+   DOCKER_HOST=unix:///tmp/docker.sock
 
 # Install wget and install/updates certificates
 RUN apt-get update \
@@ -57,17 +64,10 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf \
 COPY --from=forego /usr/local/bin/forego /usr/local/bin/forego
 COPY --from=dockergen /usr/local/bin/docker-gen /usr/local/bin/docker-gen
 
-# Add DOCKER_GEN_VERSION environment variable
-# Because some external projects rely on it
-ARG DOCKER_GEN_VERSION
-ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION}
-
 COPY network_internal.conf /etc/nginx/
 
 COPY . /app/
 WORKDIR /app/
-
-ENV DOCKER_HOST unix:///tmp/docker.sock
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["forego", "start", "-r", "--nocolor"]
